@@ -1,21 +1,20 @@
 %global build_pdf_doc 0
 
+%global commit0 bd887f4e9d8e81f2656fe0d0494bf20af852a23c
+%global shortcommit0 %(c=%{commit0}; echo ${c:0:7})
+%global gver .git%{shortcommit0}
+
 Name:           libbluray
-Version:        1.0.0
-Release:        2%{?dist}
+Version:        1.0.1
+Release:        4%{?dist}
 Summary:        Library to access Blu-Ray disks for video playback 
 License:        LGPLv2+
 URL:            http://www.videolan.org/developers/libbluray.html
 
-Source0:        http://ftp.videolan.org/pub/videolan/libbluray/last/%{name}-%{version}.tar.bz2
-Patch0:         libbluray-0.8.0-no_doxygen_timestamp.patch
-Epoch:		1
+# Do you want see the current commit and release? https://git.videolan.org/?p=libbluray.git
+Source0:        https://git.videolan.org/?p=libbluray.git;a=snapshot;h=%{commit0};sf=tgz#/%{name}-%{shortcommit0}.tar.gz
 
-%if 0%{?rhel} == 6
-BuildRequires:  java7-devel >= 1:1.7.0 
-%else
-BuildRequires:  java-devel >= 1:1.7.0
-%endif
+BuildRequires:  java-devel >= 1.8.0
 BuildRequires:  ant
 BuildRequires:  autoconf
 BuildRequires:  automake
@@ -23,11 +22,12 @@ BuildRequires:  doxygen
 BuildRequires:  fontconfig-devel
 BuildRequires:  freetype-devel
 BuildRequires:  graphviz
-BuildRequires:  jpackage-utils
 BuildRequires:  libtool
 BuildRequires:  libxml2-devel
 BuildRequires:  texlive-latex
-Provides:	%{name}%{?_isa} = %{epoch}:%{version}-%{release}
+BuildRequires:	javapackages-tools
+BuildRequires:	git
+Provides:	%{name}%{?_isa} = 1:%{version}-%{release}
 
 %description
 This package is aiming to provide a full portable free open source Blu-Ray
@@ -38,14 +38,10 @@ such as MPlayer and VLC.
 
 %package        bdj
 Summary:        BDJ support for %{name}
-Requires:       %{name}%{?_isa} = %{epoch}:%{version}-%{release}
-%if 0%{?fedora} > 20
-Requires:       java-headless >= 1:1.7.0
-%else
-Requires:       java >= 1:1.7.0
-%endif
-Requires:       jpackage-utils
-Provides:	%{name}-bdj%{?_isa} = %{epoch}:%{version}-%{release}
+Requires:       %{name} = %{version}-%{release}
+Requires:	javapackages-tools
+Requires:       java-headless >= 1.8.0
+Provides:	%{name}-bdj%{?_isa} = 1:%{version}-%{release}
 
 %description    bdj
 The %{name}-bdj package contains the jar file needed to add BD-J support to
@@ -53,34 +49,32 @@ The %{name}-bdj package contains the jar file needed to add BD-J support to
 
 %package        utils
 Summary:        Test utilities for %{name}
-Requires:       %{name}%{?_isa} = %{epoch}:%{version}-%{release}
-Provides:	%{name}-utils%{?_isa} = %{epoch}:%{version}-%{release}
+Requires:       %{name} = %{version}-%{release}
+Provides:	%{name}-utils%{?_isa} = 1:%{version}-%{release}
 
 %description    utils
 The %{name}-utils package contains test utilities for %{name}.
 
 %package        devel
 Summary:        Development files for %{name}
-Requires:       %{name}%{?_isa} = %{epoch}:%{version}-%{release}
-Provides:	%{name}-devel%{?_isa} = %{epoch}:%{version}-%{release}
+Requires:       %{name} = %{version}-%{release}
+Provides:	%{name}-devel%{?_isa} = 1:%{version}-%{release}
 
 %description    devel
 The %{name}-devel package contains libraries and header files for
 developing applications that use %{name}.
 
 %prep
-%setup -q
-%patch0 -p1 -b .no_timestamp
+%autosetup -n %{name}-%{shortcommit0} 
 
+rm -rf contrib/libudfread
+git clone https://git.videolan.org/git/libudfread.git contrib/libudfread
+./bootstrap
 
 %build
-%if 0%{?fedora}
-export JDK_HOME="%{_jvmdir}/java-1.8.0"
-%else
-export JDK_HOME="%{_jvmdir}/java-1.7.0"
-%endif
 
-autoreconf -vif
+export JDK_HOME="%{_jvmdir}/java-1.8.0"
+
 %configure --disable-static \
 %if %{build_pdf_doc}
            --enable-doxygen-pdf \
@@ -134,6 +128,10 @@ install -Dp -m755 .libs/bdj_test %{buildroot}%{_bindir}/bdj_test;
 %{_libdir}/pkgconfig/%{name}.pc
 
 %changelog
+
+* Sat Nov 04 2017 David Vásquez <davidva AT tutanota DOT com> - 1.0.1-4
+- Udf enabled
+- Updated to 1.0.1
 
 * Sat Mar 18 2017 David Vásquez <davidva AT tutanota DOT com> - 1.0.0-2
 - Upstream
